@@ -133,9 +133,7 @@
         <label>遊戲畫面剩餘時間</label>
         <input type="text" id="remainingMin" placeholder="例如：5.3（5分3秒）或 12:30" inputmode="decimal">
         <p class="hint">支援：5.3 = 5分3秒　｜　12 = 12分鐘　｜　會自動 +4分40秒計算重生</p>
-        <label>提醒時間（分鐘，可多個，用逗號分隔）</label>
         <input type="text" id="alertTimes" placeholder="0.5" value="0.5" style="display:none;">
-        <p class="hint">剩低約 30 秒時會全螢幕提醒 + 震動 + 音效</p>
         <div class="modal-actions">
           <button class="btn-secondary" onclick="closeModal()">取消</button>
           <button class="btn-primary" id="saveBtn" onclick="addTimer()">加入</button>
@@ -263,6 +261,9 @@
     function addTimer() {
       const name = document.getElementById('locationName').value.trim();
       const input = document.getElementById('remainingMin').value.trim();
+      if (!input) { alert('請輸入剩餘時間'); return; }
+      const totalSeconds = parseTime(input);
+      if (totalSeconds <= 0) { alert('請輸入有效時間'); return; }
       const alertMinutes = [0.5]; // 30 seconds
       const respawnAt = Date.now() + (totalSeconds + 280) * 1000; // +4 min 40 sec
 
