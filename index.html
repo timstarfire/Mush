@@ -132,10 +132,10 @@
         <input type="text" id="locationName" placeholder="例如：公園大門">
         <label>遊戲畫面剩餘時間</label>
         <input type="text" id="remainingMin" placeholder="例如：5.3（5分3秒）或 12:30" inputmode="decimal">
-        <p class="hint">支援：5.3 = 5分3秒　｜　12 = 12分鐘　｜　會自動 +5 分鐘計算重生</p>
+        <p class="hint">支援：5.3 = 5分3秒　｜　12 = 12分鐘　｜　會自動 +4分40秒計算重生</p>
         <label>提醒時間（分鐘，可多個，用逗號分隔）</label>
-        <input type="text" id="alertTimes" placeholder="例如：5,3,1" value="5,3,1">
-        <p class="hint">預設 5分、3分、1分前提醒</p>
+        <input type="text" id="alertTimes" placeholder="0.5" value="0.5" style="display:none;">
+        <p class="hint">剩低約 30 秒時會全螢幕提醒 + 震動 + 音效</p>
         <div class="modal-actions">
           <button class="btn-secondary" onclick="closeModal()">取消</button>
           <button class="btn-primary" id="saveBtn" onclick="addTimer()">加入</button>
@@ -198,7 +198,7 @@
         const now = Date.now();
         const remain = t.respawnAt - now;
         const card = document.createElement('div');
-        card.className = 'timer-card' + (remain > 0 && remain < 300000 ? ' urgent' : '');
+        card.className = 'timer-card' + (remain > 0 && remain < 30000 ? ' urgent' : '');
 
         let timeStr = '';
         let isRespawn = remain > 0;
@@ -232,7 +232,7 @@
       if (!edit) {
         document.getElementById('locationName').value = '';
         document.getElementById('remainingMin').value = '';
-        document.getElementById('alertTimes').value = '5,3,1';
+        document.getElementById('alertTimes').value = '0.5';
         editingIndex = -1;
       }
     }
@@ -263,14 +263,8 @@
     function addTimer() {
       const name = document.getElementById('locationName').value.trim();
       const input = document.getElementById('remainingMin').value.trim();
-      const alertStr = document.getElementById('alertTimes').value.trim() || '5,3,1';
-      if (!input) { alert('請輸入剩餘時間'); return; }
-
-      const totalSeconds = parseTime(input);
-      if (totalSeconds <= 0) { alert('請輸入有效時間'); return; }
-
-      const alertMinutes = alertStr.split(',').map(s => parseFloat(s.trim())).filter(n => !isNaN(n) && n > 0);
-      const respawnAt = Date.now() + (totalSeconds + 5 * 60) * 1000;
+      const alertMinutes = [0.5]; // 30 seconds
+      const respawnAt = Date.now() + (totalSeconds + 280) * 1000; // +4 min 40 sec
 
       const timerObj = { name, respawnAt, alertMinutes, alerted: {}, created: Date.now() };
 
@@ -288,11 +282,11 @@
       editingIndex = i;
       const t = timers[i];
       document.getElementById('locationName').value = t.name || '';
-      const remainSec = Math.max(0, Math.round((t.respawnAt - Date.now()) / 1000) - 300);
+      const remainSec = Math.max(0, Math.round((t.respawnAt - Date.now()) / 1000) - 280);
       const m = Math.floor(remainSec / 60);
       const s = remainSec % 60;
       document.getElementById('remainingMin').value = s ? `${m}.${s}` : m;
-      document.getElementById('alertTimes').value = (t.alertMinutes || [5,3,1]).join(',');
+      document.getElementById('alertTimes').value = (t.alertMinutes || [0.5]).join(',');
       openAddModal(true);
     }
 
@@ -336,7 +330,7 @@
     function checkInAppAlerts() {
       const now = Date.now();
       timers.forEach(t => {
-        if (!t.alertMinutes) t.alertMinutes = [5,3,1];
+        if (!t.alertMinutes) t.alertMinutes = [0.5];
         if (!t.alerted) t.alerted = {};
         t.alertMinutes.forEach(min => {
           const threshold = min * 60000;
@@ -347,7 +341,7 @@
             const overlay = document.getElementById('alertOverlay');
             document.getElementById('alertText').textContent = (t.name || '位置') + ` 剩低約 ${min} 分鐘！`;
             overlay.classList.add('show');
-            if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 400]);
+            if (navigator.vibrate) navigator.vibrate([300, 100, 300, 100, 300, 100, 500]);
             try {
               const ctx = new (window.AudioContext || window.webkitAudioContext)();
               const osc = ctx.createOscillator();
